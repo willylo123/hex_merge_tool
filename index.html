@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEX Merge Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #1c2330;
+            --border: #30363d;
+            --accent: #238636;
+            --accent-hover: #2ea043;
+            --accent-blue: #1f6feb;
+            --accent-blue-hover: #388bfd;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-mono: #79c0ff;
+            --danger: #da3633;
+            --success: #3fb950;
+            --warning: #d29922;
+            --drag-highlight: rgba(31, 111, 235, 0.15);
+            --radius: 8px;
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .page-wrapper {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 32px;
+        }
+
+        .header-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #238636, #1f6feb);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .version-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            transition: border-color 0.2s;
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-label .badge {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--accent-blue-hover);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--accent-blue);
+            background: rgba(31, 111, 235, 0.05);
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent-blue);
+            background: var(--drag-highlight);
+            transform: scale(1.01);
+        }
+
+        .drop-zone.has-file {
+            border-color: var(--accent);
+            background: rgba(35, 134, 54, 0.05);
+        }
+
+        .drop-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .drop-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .drop-hint strong {
+            color: var(--accent-blue-hover);
+        }
+
+        .file-selected-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--success);
+            margin-top: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .file-selected-name.visible { display: flex; }
+
+        /* Checksum display */
+        .checksum-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .checksum-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .checksum-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-mono);
+        }
+
+        /* Output section */
+        .output-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .output-filename-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .output-filename-row .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        #outputFileName {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        /* Merge Button */
+        .merge-btn {
+            width: 100%;
+            padding: 14px 20px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .merge-btn:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(46, 160, 67, 0.4); }
+        .merge-btn:active { transform: translateY(0); }
+        .merge-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Download Link */
+        #downloadLink {
+            display: none;
+            width: 100%;
+            padding: 13px 20px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: var(--accent-blue);
+            color: #fff;
+            text-decoration: none;
+            border-radius: var(--radius);
+            text-align: center;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        #downloadLink:hover { background: var(--accent-blue-hover); transform: translateY(-1px); }
+
+        /* Message */
+        #message {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 10px 14px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        #message.error {
+            background: rgba(218, 54, 51, 0.12);
+            border: 1px solid rgba(218, 54, 51, 0.3);
+            color: #ff7b72;
+            display: block;
+        }
+
+        #message.success {
+            background: rgba(63, 185, 80, 0.12);
+            border: 1px solid rgba(63, 185, 80, 0.3);
+            color: var(--success);
+            display: block;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0 20px;
+        }
+
+        /* Progress bar */
+        .progress-wrap {
+            height: 3px;
+            background: var(--surface2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+        .progress-wrap.visible { display: block; }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent));
+            transition: width 0.4s ease;
+            border-radius: 2px;
+        }
+
+        /* Tooltip */
+        [title] { cursor: help; }
+
+        /* Stats row */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .stat-cell {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .stat-cell .stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-mono);
+            font-weight: 600;
+        }
+
+        .stat-cell .stat-label {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+
+        <header>
+            <div class="header-icon">⬡</div>
+            <div>
+                <h1>HEX Merge Tool <span class="version-badge">v0.02</span></h1>
+                <p class="subtitle">Combine two Intel HEX files into a single output</p>
+            </div>
+        </header>
+
+        <!-- File 1 -->
+        <div class="card">
+            <div class="card-label">
+                File 1 <span class="badge">Base File</span>
+            </div>
+            <input type="file" id="file1" accept=".hex" style="display:none;" onchange="handleFileSelect(1, event)">
+            <div class="drop-zone" id="drop-area-1"
+                 ondragover="handleDragOver(event)"
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(1, event)"
+                 onclick="document.getElementById('file1').click()">
+                <span class="drop-icon">📄</span>
+                <div class="drop-hint">Drag & drop a <strong>.hex</strong> file here, or <strong>click to browse</strong></div>
+                <div class="file-selected-name" id="file1Name">✔ <span></span></div>
+            </div>
+            <div class="checksum-row">
+                <span class="checksum-label">Checksum (16-bit data sum)</span>
+                <span class="checksum-value" id="checksum1">CKS: 0x ----</span>
+            </div>
+        </div>
+
+        <!-- File 2 -->
+        <div class="card">
+            <div class="card-label">
+                File 2 <span class="badge">Append File</span>
+            </div>
+            <input type="file" id="file2" accept=".hex" style="display:none;" onchange="handleFileSelect(2, event)">
+            <div class="drop-zone" id="drop-area-2"
+                 ondragover="handleDragOver(event)"
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(2, event)"
+                 onclick="document.getElementById('file2').click()">
+                <span class="drop-icon">📄</span>
+                <div class="drop-hint">Drag & drop a <strong>.hex</strong> file here, or <strong>click to browse</strong></div>
+                <div class="file-selected-name" id="file2Name">✔ <span></span></div>
+            </div>
+            <div class="checksum-row">
+                <span class="checksum-label">Checksum (16-bit data sum)</span>
+                <span class="checksum-value" id="checksum2">CKS: 0x ----</span>
+            </div>
+        </div>
+
+        <!-- Output section -->
+        <div class="output-card">
+            <div class="card-label">Output</div>
+            <div class="output-filename-row">
+                <span class="label">Filename:</span>
+                <span id="outputFileName">—</span>
+            </div>
+            <div class="checksum-row" style="margin-bottom:0;" id="outputChecksumRow">
+                <span class="checksum-label">Merged Checksum</span>
+                <span class="checksum-value" id="outputChecksum">—</span>
+            </div>
+
+            <!-- Stats (visible after merge) -->
+            <div class="stats-grid" id="statsGrid" style="display:none;">
+                <div class="stat-cell"><div class="stat-val" id="statLines1">—</div><div class="stat-label">File 1 Lines</div></div>
+                <div class="stat-cell"><div class="stat-val" id="statLines2">—</div><div class="stat-label">File 2 Lines</div></div>
+                <div class="stat-cell"><div class="stat-val" id="statLinesTotal">—</div><div class="stat-label">Total Lines</div></div>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- Merge Button -->
+        <button class="merge-btn" id="mergeBtn" onclick="mergeFiles()">
+            ⚡ Merge Files
+        </button>
+
+        <!-- Download Link -->
+        <a id="downloadLink" href="#">⬇ Download Merged File</a>
+
+        <!-- Message -->
+        <div id="message"></div>
+
+    </div>
+
+    <script>
+        let file1Content = null;
+        let file2Content = null;
+        let originalFile2Name = "";
+
+        // ─── Helpers ───────────────────────────────────────────────────────────
+
+        function showMessage(text, type = '') {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = type; // 'error', 'success', or ''
+            if (!type) el.style.display = 'none';
+        }
+
+        function hexToByte(hexStr) {
+            return parseInt(hexStr, 16);
+        }
+
+        // ─── Parse Intel HEX line ──────────────────────────────────────────────
+
+        function parseHexLine(line) {
+            const s = line.trim();
+            if (!s.startsWith(':') || s.length < 11) return null;
+            try {
+                const byteCount  = hexToByte(s.substring(1, 3));
+                const address    = parseInt(s.substring(3, 7), 16);
+                const recordType = hexToByte(s.substring(7, 9));
+                const dataHex    = s.substring(9, 9 + byteCount * 2);
+
+                if (dataHex.length !== byteCount * 2) return null;
+
+                const data = [];
+                let lineSum = byteCount + (address & 0xFF) + (address >> 8) + recordType;
+
+                for (let i = 0; i < byteCount; i++) {
+                    const v = hexToByte(dataHex.substring(i * 2, i * 2 + 2));
+                    data.push(v);
+                    lineSum += v;
+                }
+
+                const storedCks = hexToByte(s.substring(s.length - 2));
+                const calcCks   = (0x100 - (lineSum & 0xFF)) & 0xFF;
+                const valid     = storedCks === calcCks;
+
+                return { address, data, recordType, valid };
+            } catch (e) {
+                console.error("Parse error:", e, s);
+                return null;
+            }
+        }
+
+        // ─── Checksum ──────────────────────────────────────────────────────────
+
+        /**
+         * 16-bit masked data sum of all type-00 records.
+         * Returns stats: { display, dataLines, invalidLines }
+         */
+        function calculateChecksum(content) {
+            const lines = content.split('\n');
+            let dataSum = 0;
+            let dataLines = 0;
+            let invalidLines = 0;
+
+            for (const line of lines) {
+                const parsed = parseHexLine(line);
+                if (!parsed) continue;
+                if (!parsed.valid) invalidLines++;
+                if (parsed.recordType === 0x00) {
+                    dataLines++;
+                    for (const b of parsed.data) dataSum += b;
+                }
+            }
+
+            const masked = dataSum & 0xFFFF;
+            const hex = masked.toString(16).toUpperCase().padStart(4, '0');
+            return {
+                display: `CKS: 0x ${hex}`,
+                dataLines,
+                invalidLines
+            };
+        }
+
+        // ─── Output filename logic ──────────────────────────────────────────────
+
+        function updateOutputFileName(originalFileName) {
+            if (!originalFileName) {
+                document.getElementById('outputFileName').textContent = '—';
+                return;
+            }
+
+            const lastDot = originalFileName.lastIndexOf('.');
+            let base   = lastDot !== -1 ? originalFileName.substring(0, lastDot) : originalFileName;
+            const ext  = lastDot !== -1 ? originalFileName.substring(lastDot + 1) : '';
+
+            if (base.toLowerCase().includes('(rs232)')) {
+                base = base.replace(/\(RS232\)/gi, '').trim();
+            } else {
+                base += '_merge';
+            }
+
+            const newName = ext ? `${base}.${ext}` : base;
+            document.getElementById('outputFileName').textContent = newName;
+            document.getElementById('downloadLink').dataset.filename = newName;
+        }
+
+        // ─── File reading ──────────────────────────────────────────────────────
+
+        function readFile(file, fileIndex) {
+            if (!file.name.toLowerCase().endsWith('.hex')) {
+                showMessage(`Error: Please select a valid .hex file.`, 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const cks = calculateChecksum(content);
+
+                if (fileIndex === 1) {
+                    file1Content = content;
+                    document.getElementById('checksum1').textContent = cks.display;
+                    const nameEl = document.getElementById('file1Name');
+                    nameEl.querySelector('span').textContent = file.name;
+                    nameEl.classList.add('visible');
+                    document.getElementById('drop-area-1').classList.add('has-file');
+
+                    if (cks.invalidLines > 0) {
+                        showMessage(`Warning: ${cks.invalidLines} line(s) in File 1 have checksum mismatches.`, 'error');
+                    }
+                } else {
+                    file2Content = content;
+                    originalFile2Name = file.name;
+                    document.getElementById('checksum2').textContent = cks.display;
+                    const nameEl = document.getElementById('file2Name');
+                    nameEl.querySelector('span').textContent = file.name;
+                    nameEl.classList.add('visible');
+                    document.getElementById('drop-area-2').classList.add('has-file');
+                    updateOutputFileName(file.name);
+
+                    if (cks.invalidLines > 0) {
+                        showMessage(`Warning: ${cks.invalidLines} line(s) in File 2 have checksum mismatches.`, 'error');
+                    }
+                }
+
+                // Clear message if no warnings
+                if (cks.invalidLines === 0) showMessage('');
+            };
+            reader.readAsText(file);
+        }
+
+        function handleFileSelect(fileIndex, event) {
+            const file = event.target.files[0];
+            if (file) readFile(file, fileIndex);
+        }
+
+        // ─── Drag & Drop ───────────────────────────────────────────────────────
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            const target = event.target.closest('#drop-area-1, #drop-area-2');
+            if (target) target.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            const target = event.target.closest('#drop-area-1, #drop-area-2');
+            if (target) target.classList.remove('drag-over');
+        }
+
+        function handleDrop(fileIndex, event) {
+            event.preventDefault();
+            document.getElementById('drop-area-1').classList.remove('drag-over');
+            document.getElementById('drop-area-2').classList.remove('drag-over');
+
+            if (!event.dataTransfer.files.length) return;
+            const file = event.dataTransfer.files[0];
+
+            const input = document.getElementById(`file${fileIndex}`);
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change'));
+        }
+
+        // ─── Merge ─────────────────────────────────────────────────────────────
+
+        function mergeFiles() {
+            document.getElementById('downloadLink').style.display = 'none';
+            document.getElementById('outputChecksum').textContent = '—';
+            document.getElementById('statsGrid').style.display = 'none';
+            showMessage('');
+
+            if (!file1Content || !file2Content) {
+                showMessage('Please load both File 1 and File 2 before merging.', 'error');
+                return;
+            }
+
+            // Animate progress bar
+            const progressWrap = document.getElementById('progressWrap');
+            const progressBar  = document.getElementById('progressBar');
+            progressWrap.classList.add('visible');
+            progressBar.style.width = '0%';
+            setTimeout(() => progressBar.style.width = '60%', 50);
+
+            setTimeout(() => {
+                // Strip blank lines and EOF records, then merge
+                const filterLines = (content) =>
+                    content.split('\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0 && l.toUpperCase() !== ':00000001FF');
+
+                const lines1 = filterLines(file1Content);
+                const lines2 = filterLines(file2Content);
+                const mergedLines = [...lines1, ...lines2, ':00000001FF'];
+                const mergedContent = mergedLines.join('\r\n') + '\r\n';
+
+                progressBar.style.width = '100%';
+
+                setTimeout(() => {
+                    progressWrap.classList.remove('visible');
+                    progressBar.style.width = '0%';
+
+                    // Build download blob
+                    const blob = new Blob([mergedContent], { type: 'text/plain' });
+                    const outputFileName = document.getElementById('downloadLink').dataset.filename || 'merged.hex';
+                    const dl = document.getElementById('downloadLink');
+                    dl.href = URL.createObjectURL(blob);
+                    dl.download = outputFileName;
+                    dl.textContent = `⬇ Download: ${outputFileName}`;
+                    dl.style.display = 'block';
+
+                    // Checksum & stats
+                    const cks = calculateChecksum(mergedContent);
+                    document.getElementById('outputChecksum').textContent = cks.display;
+
+                    document.getElementById('statLines1').textContent = lines1.length;
+                    document.getElementById('statLines2').textContent = lines2.length;
+                    document.getElementById('statLinesTotal').textContent = mergedLines.length;
+                    document.getElementById('statsGrid').style.display = 'grid';
+
+                    showMessage('✅ Merge successful! Your file is ready to download.', 'success');
+                }, 400);
+            }, 100);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOutputFileName('');
+        });
+    </script>
+</body>
+</html>
