@@ -4,6 +4,7 @@
 > **版本 Version:** v0.02  
 > **類型 Type:** 純前端網頁工具 / Pure front-end web application  
 > **格式支援 Format:** Intel HEX (`.hex`)
+> 
 > **線上使用 Live Demo:** [https://willylo123.github.io/hex_merge_tool/](https://willylo123.github.io/hex_merge_tool/)
 
 ---
